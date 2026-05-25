@@ -1,3 +1,0 @@
-# Web Config
-
-@AGENTS.md

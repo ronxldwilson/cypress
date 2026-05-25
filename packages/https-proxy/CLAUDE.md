@@ -1,3 +1,0 @@
-# HTTPS Proxy
-
-@AGENTS.md

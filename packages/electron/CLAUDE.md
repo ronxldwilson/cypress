@@ -1,3 +1,0 @@
-# Electron
-
-@AGENTS.md

@@ -1,3 +1,0 @@
-# System Tests
-
-@AGENTS.md

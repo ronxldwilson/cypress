@@ -1,3 +1,0 @@
-# Data Context
-
-@AGENTS.md

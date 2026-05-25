@@ -1,3 +1,0 @@
-# Launcher
-
-@AGENTS.md

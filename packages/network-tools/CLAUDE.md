@@ -1,3 +1,0 @@
-# Network Tools
-
-@AGENTS.md

@@ -1,3 +1,0 @@
-# Socket
-
-@AGENTS.md

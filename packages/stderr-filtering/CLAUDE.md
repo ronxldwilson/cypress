@@ -1,3 +1,0 @@
-# Stderr Filtering
-
-@AGENTS.md

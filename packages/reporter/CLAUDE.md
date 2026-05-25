@@ -1,3 +1,0 @@
-# Reporter
-
-@AGENTS.md

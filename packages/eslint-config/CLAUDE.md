@@ -1,3 +1,0 @@
-# ESLint Config
-
-@AGENTS.md

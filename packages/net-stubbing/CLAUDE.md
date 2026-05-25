@@ -1,3 +1,0 @@
-# Net Stubbing
-
-@AGENTS.md

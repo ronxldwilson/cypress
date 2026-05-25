@@ -1,3 +1,0 @@
-# Proxy
-
-@AGENTS.md

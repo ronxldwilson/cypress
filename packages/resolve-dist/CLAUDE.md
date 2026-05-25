@@ -1,3 +1,0 @@
-# Resolve Dist
-
-@AGENTS.md
