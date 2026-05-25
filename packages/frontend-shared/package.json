@@ -13,7 +13,6 @@
     "dev": "gulp dev --project .",
     "generate-shiki-theme": "node ./script/generate-shiki-theme.js",
     "generate-stub-specs": "node ./script/generate-stub-specs.js",
-    "postinstall": "patch-package",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx,.json,.vue .",
     "test": "yarn cypress:run",
     "tslint": "tslint --config ../ts/tslint.json --project ."
@@ -50,7 +49,6 @@
     "@percy/core": "^1.0.0-beta.48",
     "@percy/cypress": "^3.1.7",
     "@testing-library/cypress": "10.1.0",
-    "@tooling/system-tests": "0.0.0-development",
     "@toycode/markdown-it-class": "1.2.4",
     "@urql/core": "2.4.4",
     "@urql/exchange-execute": "1.1.0",

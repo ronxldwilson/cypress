@@ -35,7 +35,6 @@
     "@packages/types": "0.0.0-development",
     "@percy/cypress": "^3.1.7",
     "@purge-icons/generated": "0.8.1",
-    "@tooling/system-tests": "0.0.0-development",
     "@types/dedent": "^0.7.2",
     "@types/fs-extra": "^8.1.5",
     "@urql/core": "2.4.4",
