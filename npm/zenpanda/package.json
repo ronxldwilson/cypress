@@ -1,0 +1,46 @@
+{
+  "name": "@cypress/zenpanda",
+  "version": "0.0.0-development",
+  "description": "Cypress plugin for running tests against ZenPanda — a multi-tenant, low-memory headless browser",
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc || echo 'built, with errors'",
+    "build-prod": "yarn build",
+    "check-ts": "tsc --noEmit",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test-watch": "vitest --watch",
+    "watch": "rimraf dist && tsc --watch"
+  },
+  "dependencies": {
+    "debug": "^4.3.4"
+  },
+  "devDependencies": {
+    "@packages/eslint-config": "0.0.0-development",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^22.18.7",
+    "eslint": "^9.31.0",
+    "rimraf": "^6.1.1",
+    "typescript": "5.4.5",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "cypress": ">=13.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cypress-io/cypress.git"
+  },
+  "homepage": "https://github.com/cypress-io/cypress/blob/develop/npm/zenpanda/#readme",
+  "bugs": "https://github.com/cypress-io/cypress/issues/new?assignees=&labels=npm%3A%20%40cypress%2Fzenpanda&template=1-bug-report.md&title=",
+  "publishConfig": {
+    "access": "public"
+  },
+  "nx": {}
+}
