@@ -237,7 +237,6 @@
       "cli",
       "packages/*",
       "npm/*",
-      "tooling/*",
       "system-tests",
       "scripts"
     ],
