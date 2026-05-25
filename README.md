@@ -12,8 +12,7 @@ ZenPanda is a multi-tenant headless browser (Zig + V8) that speaks the Chrome De
 
 ## Prerequisites
 
-- Node.js (see `.node-version`)
-- Yarn 1 (`yarn@1.22.22`)
+- [Bun](https://bun.sh)
 - A running ZenPanda instance
 
 ```bash
@@ -32,16 +31,16 @@ ZENPANDA_PORT=9222
 
 ```bash
 # Install dependencies
-yarn
+bun install
 
 # Verify ZenPanda is reachable
-node packages/launcher/test-zenpanda-detect.js
+bun packages/launcher/test-zenpanda-detect.js
 
 # Run the CDP smoke test (requires ZenPanda running)
-node packages/server/test-zenpanda-cdp.js
+bun packages/server/test-zenpanda-cdp.js
 
 # Open Cypress (dev mode)
-yarn dev
+bun dev
 ```
 
 ## Configuring a project
@@ -65,7 +64,7 @@ module.exports = defineConfig({
 Run with:
 
 ```bash
-npx cypress run --browser zenpanda
+bunx cypress run --browser zenpanda
 ```
 
 ## Monorepo structure (relevant packages)
