@@ -1,3 +1,0 @@
-# @cypress/svelte
-
-@AGENTS.md

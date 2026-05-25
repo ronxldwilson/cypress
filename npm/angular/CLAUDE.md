@@ -1,3 +1,0 @@
-# @cypress/angular
-
-@AGENTS.md

@@ -1,3 +1,0 @@
-# @cypress/schematic
-
-@AGENTS.md
