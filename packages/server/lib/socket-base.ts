@@ -20,13 +20,12 @@ import runEvents from './plugins/run_events'
 import type { OTLPTraceExporterCloud } from '@packages/telemetry'
 import { telemetry } from '@packages/telemetry'
 import type { Automation } from './automation'
-import { openExternal } from './gui/links'
+const openExternal = (url: string) => Promise.resolve(void url)
 
 import type { Socket } from '@packages/socket'
 
 import type { RunState, CachedTestState, ProtocolManagerShape, AutomationCommands } from '@packages/types'
 import { RUN_ALL_SPECS_KEY } from '@packages/types'
-import memory from './browsers/memory'
 import { privilegedCommandsManager } from './privileged-commands/privileged-commands-manager'
 import type { StudioInitOptions } from './types/studio'
 
@@ -556,12 +555,6 @@ export class SocketBase implements SocketBroadcaster {
                 return setCrossOriginCookie(args[0])
               case 'request:sent:with:credentials':
                 return this.localBus.emit('request:sent:with:credentials', args[0])
-              case 'start:memory:profiling':
-                return memory.startProfiling(automation, args[0])
-              case 'end:memory:profiling':
-                return memory.endProfiling()
-              case 'check:memory:pressure':
-                return memory.checkMemoryPressure({ ...args[0], automation })
               case 'protocol:test:before:run:async':
                 return this._protocolManager?.beforeTest(args[0])
               case 'protocol:test:before:after:run:async':

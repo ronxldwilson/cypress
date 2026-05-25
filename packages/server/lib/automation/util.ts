@@ -1,4 +1,3 @@
-import type playwright from 'playwright-webkit'
 import { domainMatch, pathMatch } from 'tough-cookie'
 
 // @ts-ignore
@@ -12,7 +11,7 @@ export type CyCookie = Pick<chrome.cookies.Cookie, 'name' | 'value' | 'expiratio
 // @ts-ignore
 export type CyCookieFilter = chrome.cookies.GetAllDetails
 
-export const cookieMatches = (cookie: CyCookie | playwright.Cookie, filter?: CyCookieFilter, options?: { strictDomain: boolean }) => {
+export const cookieMatches = (cookie: CyCookie, filter?: CyCookieFilter, options?: { strictDomain: boolean }) => {
   if (filter?.domain) {
     if (options?.strictDomain ? filter?.domain !== cookie.domain : !domainMatch(filter?.domain, cookie.domain))
     return false

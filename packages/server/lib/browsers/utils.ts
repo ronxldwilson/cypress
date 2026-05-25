@@ -6,7 +6,6 @@ import * as launcher from '@packages/launcher'
 import type { Automation } from '../automation'
 import type { Browser } from './types'
 import type { CriClient } from './cri-client'
-import * as profileCleaner from '../util/profile_cleaner'
 
 declare global {
   interface Window {
@@ -25,7 +24,6 @@ const appData = require('../util/app_data')
 const { telemetry } = require('@packages/telemetry')
 
 const pathToBrowsers = appData.path('browsers')
-const legacyProfilesWildcard = path.join(pathToBrowsers, '*')
 
 const getAppDataPath = (browser) => {
   if (!browser || !browser.profilePath) {
@@ -35,9 +33,6 @@ const getAppDataPath = (browser) => {
   return path.join(browser.profilePath, 'Cypress')
 }
 
-const getProfileWildcard = (browser) => {
-  return path.join(getAppDataPath(browser), '*')
-}
 
 const getBrowserPath = (browser) => {
   // TODO need to check if browser.name is an unempty string
@@ -84,26 +79,8 @@ const getProfileDir = (browser, isTextTerminal) => {
   )
 }
 
-// we now store profiles inside the Cypress binary folder
-// so we need to remove the legacy root profiles that existed before
-function removeLegacyProfiles () {
-  return profileCleaner.removeRootProfile(legacyProfilesWildcard, [
-    path.join(legacyProfilesWildcard, 'run-*'),
-    path.join(legacyProfilesWildcard, 'interactive'),
-  ])
-}
-
-const removeOldProfiles = function (browser) {
-  // a profile is considered old if it was used
-  // in a previous run for a PID that is either
-  // no longer active, or isnt a cypress related process
-  const pathToPartitions = appData.electronPartitionsPath()
-
-  return Promise.all([
-    removeLegacyProfiles(),
-    profileCleaner.removeInactiveByPid(getProfileWildcard(browser), 'run-'),
-    profileCleaner.removeInactiveByPid(pathToPartitions, 'run-'),
-  ])
+const removeOldProfiles = function (_browser) {
+  return Promise.resolve()
 }
 
 async function executeBeforeBrowserLaunch (browser, launchOptions: typeof defaultLaunchOptions, options) {

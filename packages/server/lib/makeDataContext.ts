@@ -3,7 +3,8 @@ import { DataContext, getCtx, clearCtx, setCtx } from '@packages/data-context'
 import electron, { OpenDialogOptions, SaveDialogOptions, BrowserWindow } from 'electron'
 
 import { isListening } from './util/ensure-url'
-import { isMainWindowFocused, focusMainWindow } from './gui/windows'
+const isMainWindowFocused = () => false
+const focusMainWindow = () => Promise.resolve()
 
 import type {
   AllModeOptions,
@@ -22,7 +23,7 @@ import * as cohorts from './cohorts'
 import { openProject } from './open_project'
 import { cache } from './cache'
 import { graphqlSchema } from '@packages/data-context/graphql/schema'
-import { openExternal } from './gui/links'
+const openExternal = (url: string) => Promise.resolve(void url)
 import { getUserEditor } from './util/editors'
 import * as savedState from './saved_state'
 import appData from './util/app_data'

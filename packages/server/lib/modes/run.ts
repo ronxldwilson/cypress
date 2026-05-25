@@ -353,8 +353,10 @@ async function compressRecording (options: { quiet: boolean, videoCompression: n
     videoCompression: Number(options.videoCompression),
   }
 
-  function continueWithCompression (onProgress?: (progress: number) => void) {
-    return videoCapture.compress({ ...processOptions, onProgress })
+  function continueWithCompression (_onProgress?: (progress: number) => void) {
+    debug('video compression skipped (ZenPanda mode — no ffmpeg)')
+
+    return Promise.resolve()
   }
 
   if (options.quiet) {
@@ -711,7 +713,7 @@ async function waitForTestsToFinishRunning (options: { project: Project, screens
 
   if (videoExists && !skippedSpec && !videoCaptureFailed) {
     const span = telemetry.startSpan({ name: 'video:compression' })
-    const chaptersConfig = videoCapture.generateFfmpegChaptersConfig(results.tests)
+    const chaptersConfig = undefined
 
     printResults.printVideoHeader()
 

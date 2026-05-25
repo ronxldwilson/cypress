@@ -5,8 +5,8 @@ import { app, nativeImage as image } from 'electron'
 
 import * as cyIcons from '@packages/icons'
 import * as savedState from '../saved_state'
-import menu from '../gui/menu'
-import * as Windows from '../gui/windows'
+const menu = { set: (..._args: any[]) => {} }
+const Windows = { open: (..._args: any[]) => Promise.resolve(), get: (..._args: any[]) => null, create: (..._args: any[]) => Promise.resolve() }
 import { GracefulExit } from '../util/graceful-exit'
 import { makeGraphQLServer } from '@packages/data-context/graphql/makeGraphQLServer'
 import { globalPubSub, getCtx, clearCtx } from '@packages/data-context'
