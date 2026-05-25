@@ -1,1 +1,0 @@
-NOTE: this project implicitly tests the fix for https://github.com/cypress-io/cypress/issues/32968 as we need to call `installBindings()` inside `npm/webpack-dev-server/src/helpers/nextHandler.ts` for Next 16.0.3+.

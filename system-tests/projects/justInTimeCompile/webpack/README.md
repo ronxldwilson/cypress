@@ -1,1 +1,0 @@
-yarn cypress:run --project=./cypress/system-tests/projects/experimental-JIT --component 
