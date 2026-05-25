@@ -140,4 +140,14 @@ export const knownBrowsers: Browser[] = [
     versionRegex: /Microsoft Edge.+?(\S*(?= dev)|(?<=dev )\S*)/mi,
     binary: ['edge-dev', 'microsoft-edge-dev'],
   },
+  {
+    name: 'zenpanda',
+    family: 'zenpanda',
+    channel: 'stable',
+    displayName: 'ZenPanda',
+    // ZenPanda returns a JSON version blob from /json/version; the version field is extracted there
+    versionRegex: /^(\S+)$/m,
+    // ZenPanda is a server, not a binary — detection goes through the network path
+    binary: 'zenpanda',
+  },
 ]

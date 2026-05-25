@@ -1,6 +1,7 @@
 import Bluebird from 'bluebird'
 import _, { compact, extend, find } from 'lodash'
 import os from 'os'
+import http from 'http'
 import { removeDuplicateBrowsers } from '@packages/data-context/src/sources/BrowserDataSource'
 import { knownBrowsers } from './known-browsers'
 import * as darwinHelper from './darwin'
@@ -93,8 +94,14 @@ function lookup (
  * Try to detect a single browser definition, which may dispatch multiple `checkOneBrowser` calls,
  * one for each binary. If Windows is detected, only one `checkOneBrowser` will be called, because
  * we don't use the `binary` field on Windows.
+ *
+ * ZenPanda is detected via its CDP HTTP endpoint instead of the filesystem.
  */
 function checkBrowser (browser: Browser): Bluebird<(boolean | HasVersion)[]> {
+  if (browser.family === 'zenpanda') {
+    return Bluebird.resolve(detectZenPanda(browser)).then((result) => [result])
+  }
+
   if (Array.isArray(browser.binary) && os.platform() !== 'win32') {
     return Bluebird.map(browser.binary, (binary: string) => {
       return checkOneBrowser(extend({}, browser, { binary }))
@@ -142,6 +149,62 @@ function checkOneBrowser (browser: Browser): Promise<boolean | HasVersion> {
     return foundBrowser
   })
   .catch(failed)
+}
+
+const ZENPANDA_DEFAULT_HOST = '127.0.0.1'
+const ZENPANDA_DEFAULT_PORT = 9222
+
+/**
+ * Attempt to discover a running ZenPanda instance by hitting its /json/version HTTP endpoint.
+ * Returns a FoundBrowser if ZenPanda is reachable, false otherwise.
+ */
+function detectZenPanda (browser: Browser): Promise<false | FoundBrowser> {
+  const host = process.env.ZENPANDA_HOST || ZENPANDA_DEFAULT_HOST
+  const port = Number(process.env.ZENPANDA_PORT || ZENPANDA_DEFAULT_PORT)
+
+  return new Promise((resolve) => {
+    const req = http.get(
+      { host, port, path: '/json/version', timeout: 2000 },
+      (res) => {
+        let body = ''
+
+        res.on('data', (chunk) => {
+          body += chunk
+        })
+
+        res.on('end', () => {
+          try {
+            const info = JSON.parse(body)
+            const version: string = info['Browser'] || info['Version'] || '0.0.0'
+            const cleanVersion = version.replace(/[^0-9.]/g, '') || '0.0.0'
+
+            const foundBrowser: FoundBrowser = {
+              name: browser.name,
+              family: browser.family,
+              channel: browser.channel,
+              displayName: browser.displayName,
+              version: cleanVersion,
+              majorVersion: cleanVersion.split('.')[0],
+              // ZenPanda path encodes the CDP WebSocket endpoint so the launcher
+              // knows how to connect without re-detecting at launch time.
+              path: `http://${host}:${port}`,
+            }
+
+            debug('detected ZenPanda %o', foundBrowser)
+            resolve(foundBrowser)
+          } catch {
+            resolve(false)
+          }
+        })
+      },
+    )
+
+    req.on('error', () => resolve(false))
+    req.on('timeout', () => {
+      req.destroy()
+      resolve(false)
+    })
+  })
 }
 
 /** returns list of detected browsers */

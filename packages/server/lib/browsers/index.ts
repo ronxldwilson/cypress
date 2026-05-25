@@ -102,6 +102,8 @@ async function getBrowserLauncher (browser: Browser, browsers: FoundBrowser[]): 
 
   if (browser.family === 'webkit') return require('./webkit')
 
+  if (browser.family === 'zenpanda') return require('./zenpanda')
+
   return utils.throwBrowserNotFound(browser.name, browsers)
 }
 
