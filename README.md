@@ -1,94 +1,96 @@
-<p align="center">
-  <a href="https://www.cypress.io">
-    <picture>
-      <source media="(prefers-color-scheme: dark)"  srcset="./assets/cypress-logo-dark.png">
-      <source media="(prefers-color-scheme: light)" srcset="./assets/cypress-logo-light.png">
-      <img alt="Cypress Logo" src="./assets/cypress-logo-light.png">
-    </picture>
-  </a>
-</p>
-<p align="center">
-  <a href="https://on.cypress.io">Documentation</a> |
-  <a href="https://on.cypress.io/changelog">Changelog</a> |
-  <a href="https://on.cypress.io/roadmap">Roadmap</a>
-</p>
+# Cypress × ZenPanda
 
-<h3 align="center">
-  The web has evolved. Finally, testing has too.
-</h3>
+A stripped-down fork of [Cypress](https://www.cypress.io) that targets [ZenPanda](https://github.com/ronxldwilson/zenpanda) as the sole browser backend.
 
-<p align="center">
-  Fast, easy and reliable testing for anything that runs in a browser.
-</p>
-<p align="center">
-  Join us, we're <a href="https://cypress.io/jobs">hiring</a>.
-</p>
+ZenPanda is a multi-tenant headless browser (Zig + V8) that speaks the Chrome DevTools Protocol (CDP). It runs as a persistent server — Cypress connects to it over a WebSocket instead of launching a new browser process per run.
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/cypress">
-    <img src="https://img.shields.io/npm/dm/cypress.svg" alt="npm"/>
-  </a>
-  <a href="https://on.cypress.io/discord">
-    <img src="https://img.shields.io/badge/chat-on%20Discord-brightgreen" alt="Discord chat"/>
-  </a>
-    <a href="https://stackshare.io/cypress">
-    <img src="https://img.stackshare.io/misc/follow-on-stackshare-badge.svg" alt="StackShare"/>
-  </a><br />
-</p>
+## Why
 
-## What is Cypress?
+- **Speed** — no per-run browser spawn; ZenPanda is already running
+- **Scale** — multi-tenant; many Cypress workers can share one ZenPanda instance
+- **Lean** — removed Chrome, Firefox, WebKit, Electron browser launchers; removed ffmpeg, geckodriver, playwright-webkit, and all framework-specific component-testing adapters
 
-<p align="center">
-  <a href="https://player.vimeo.com/video/237527670">
-    <img alt="Why Cypress Video" src="https://user-images.githubusercontent.com/1271364/31739717-dbdff0ee-b41c-11e7-9b16-bfa1b6ac1814.png" width="75%" height="75%" />
-  </a>
-</p>
+## Prerequisites
 
-## Installing
-
-[![npm version](https://badge.fury.io/js/cypress.svg)](https://badge.fury.io/js/cypress)
-
-Install Cypress for Mac, Linux, or Windows, then [get started](https://on.cypress.io/install).
+- Node.js (see `.node-version`)
+- Yarn 1 (`yarn@1.22.22`)
+- A running ZenPanda instance
 
 ```bash
-npm install cypress --save-dev
+# Start ZenPanda via Docker
+docker run -d --name zenpanda -p 127.0.0.1:9222:9222 ronxldwilson/zenpanda:latest
 ```
-or
+
+Override the default host/port with env vars:
+
 ```bash
-yarn add cypress --dev
+ZENPANDA_HOST=127.0.0.1
+ZENPANDA_PORT=9222
 ```
-or
+
+## Quick start
+
 ```bash
-pnpm add cypress --save-dev
+# Install dependencies
+yarn
+
+# Verify ZenPanda is reachable
+node packages/launcher/test-zenpanda-detect.js
+
+# Run the CDP smoke test (requires ZenPanda running)
+node packages/server/test-zenpanda-cdp.js
+
+# Open Cypress (dev mode)
+yarn dev
 ```
 
-![installing-cli e1693232](./assets/cypress-installation.gif)
+## Configuring a project
 
-## Contributing
+Use the `@cypress/zenpanda` plugin to register ZenPanda as a browser:
 
-[![cypress](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/ypt4pf/develop&style=flat&logo=cypress)](https://cloud.cypress.io/projects/ypt4pf/runs)
-[![CircleCI](https://circleci.com/gh/cypress-io/cypress/tree/develop.svg?style=svg)](https://circleci.com/gh/cypress-io/cypress/tree/develop) -  `develop` branch
+```js
+// cypress.config.js
+const { defineConfig } = require('cypress')
+const { addZenPandaBrowser } = require('@cypress/zenpanda')
 
-Please see our [Contributing Guideline](./CONTRIBUTING.md) which explains repo organization, linting, testing, and other steps.
+module.exports = defineConfig({
+  e2e: {
+    setupNodeEvents (on, config) {
+      return addZenPandaBrowser(config)
+    },
+  },
+})
+```
+
+Run with:
+
+```bash
+npx cypress run --browser zenpanda
+```
+
+## Monorepo structure (relevant packages)
+
+| Path | Purpose |
+|------|---------|
+| `packages/server/lib/browsers/zenpanda.ts` | ZenPanda browser launcher — connects via CDP WebSocket |
+| `packages/launcher/lib/detect.ts` | Detects ZenPanda via HTTP probe (`/json/version`) |
+| `npm/zenpanda/` | `@cypress/zenpanda` plugin (adds ZenPanda browser + `probeZenPanda()`) |
+| `system-tests/projects/zenpanda-configured/` | Example system-test project |
+| `packages/launcher/test-zenpanda-detect.js` | Quick detection smoke test |
+| `packages/server/test-zenpanda-cdp.js` | Full CDP smoke test |
+
+## What was removed
+
+- `packages/server/lib/browsers/chrome.ts` / `firefox.ts` / `webkit.ts` / `electron.ts`
+- `packages/extension/` — Chrome WebExtension
+- `packages/runner/` — legacy runner UI
+- `npm/puppeteer/` — Puppeteer plugin
+- `npm/angular/`, `npm/react/`, `npm/vue/`, `npm/svelte/` — component testing adapters
+- `npm/vite-dev-server/`, `npm/webpack-dev-server/`, `npm/webpack-preprocessor/` — bundler integrations
+- `tooling/` — V8 snapshot / packherd Electron tooling
+- All `system-tests/projects/angular-*`, `react*`, `vue3*`, `svelte-*`, `next-*`, `vite*`, `webpack-*`
+- Heavy deps: `@ffmpeg-installer/ffmpeg`, `geckodriver`, `playwright-webkit`, `firefox-profile`, `edgedriver`, `webdriver`
 
 ## License
 
-[![license](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/cypress-io/cypress/blob/develop/LICENSE)
-
-This project is licensed under the terms of the [MIT license](/LICENSE).
-
-## Badges
-
-Configure a badge for your project's README to show your test status or test count in the [Cypress Cloud](https://www.cypress.io/cloud).
-
-[![cypress](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/ypt4pf/develop&style=flat&logo=cypress)](https://cloud.cypress.io/projects/ypt4pf/runs)
-
-[![cypress](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/count/ypt4pf/develop&style=flat&logo=cypress)](https://cloud.cypress.io/projects/ypt4pf/runs)
-
-Or let the world know your project is using Cypress with the badge below.
-
-[![Cypress.io](https://img.shields.io/badge/tested%20with-Cypress-04C38E.svg)](https://www.cypress.io/)
-
-```
-[![Cypress.io](https://img.shields.io/badge/tested%20with-Cypress-04C38E.svg)](https://www.cypress.io/)
-```
+[MIT](/LICENSE)
