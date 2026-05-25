@@ -64,11 +64,12 @@ async function _setAutomation (
   options: BrowserLaunchOpts | BrowserNewTabOpts,
 ) {
   const cdpAutomation = await CdpAutomation.create(
-    pageCriClient.send.bind(pageCriClient),
-    pageCriClient.on.bind(pageCriClient),
-    pageCriClient.off.bind(pageCriClient),
+    pageCriClient.send,
+    pageCriClient.on,
+    pageCriClient.off,
     resetBrowserTargets,
     automation,
+    (options as BrowserLaunchOpts).protocolManager,
   )
 
   automation.use(cdpAutomation)
@@ -112,7 +113,7 @@ export async function connectToExisting (
 }
 
 export async function connectToNewSpec (
-  browser: Browser,
+  _browser: Browser,
   options: BrowserNewTabOpts,
   automation: Automation,
   cdpSocketServer?: CDPSocketServer,
@@ -120,28 +121,25 @@ export async function connectToNewSpec (
   debug('connecting to new ZenPanda tab %o', { url: options.url })
 
   const client = _getBrowserCriClient()
-
   const pageCriClient = client.currentlyAttachedTarget
 
   if (!pageCriClient) throw new Error('Missing pageCriClient in connectToNewSpec')
   if (!options.url) throw new Error('Missing url in connectToNewSpec')
 
-  await pageCriClient.send('Page.navigate', { url: 'about:blank' })
-  const newPageCriClient = await client.attachToTargetUrl('about:blank')
-
-  await cdpSocketServer?.attachCDPClient(newPageCriClient)
-
   await connectProtocolToBrowser({ protocolManager: options.protocolManager })
-  await _setAutomation(newPageCriClient, automation, client.resetBrowserTargets, options)
+  await cdpSocketServer?.attachCDPClient(pageCriClient)
 
-  await newPageCriClient.send('Page.enable')
+  const cdpAutomation = await _setAutomation(pageCriClient, automation, client.resetBrowserTargets, options)
+
+  await pageCriClient.send('Page.enable')
   await options.onInitializeNewBrowserTab?.()
 
   await Promise.all([
-    utils.initializeCDP(newPageCriClient, automation),
+    utils.initializeCDP(pageCriClient, automation),
   ])
 
-  await newPageCriClient.send('Page.navigate', { url: options.url })
+  await pageCriClient.send('Page.navigate', { url: options.url })
+  cdpAutomation._listenForFrameTreeChanges(pageCriClient)
 }
 
 export async function connectProtocolToBrowser (options: { protocolManager?: ProtocolManagerShape }) {
@@ -251,6 +249,7 @@ export async function open (
 
   await pageCriClient.send('Page.navigate', { url })
 
+  await cdpAutomation._handlePausedRequests(pageCriClient)
   cdpAutomation._listenForFrameTreeChanges(pageCriClient)
 
   await utils.executeAfterBrowserLaunch(browser, {
@@ -269,12 +268,5 @@ export async function open (
     }
   }
 
-  const instance = new ZenPandaInstance()
-
-  browserCriClient.on('disconnect', () => {
-    debug('ZenPanda CDP connection closed unexpectedly')
-    instance.emit('exit', null, 'SIGTERM')
-  })
-
-  return instance
+  return new ZenPandaInstance()
 }

@@ -112,6 +112,11 @@ export class BrowserDataSource {
   }
 
   async isFocusSupported (obj: FoundBrowser) {
+    // ZenPanda is a headless server with no window to focus
+    if (obj.family === 'zenpanda') {
+      return false
+    }
+
     if (obj.family !== 'firefox') {
       return true
     }
