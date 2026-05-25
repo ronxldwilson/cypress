@@ -3,9 +3,6 @@ import Bluebird from 'bluebird'
 import Debug from 'debug'
 import utils from './utils'
 import * as errors from '../errors'
-import { exec } from 'child_process'
-import util from 'util'
-import os from 'os'
 import { BROWSER_FAMILY, BrowserLaunchOpts, BrowserNewTabOpts, FoundBrowser, ProtocolManagerShape, CyPromptManagerShape, StudioManagerShape } from '@packages/types'
 import type { Browser, BrowserInstance, BrowserLauncher } from './types'
 import type { Automation } from '../automation'
@@ -53,12 +50,12 @@ const kill = (options: KillOptions = {}) => {
         instanceToKill.removeAllListeners()
       }
 
-      debug('browser process killed')
+      debug('ZenPanda session ended')
 
       resolve()
     })
 
-    debug('killing browser process')
+    debug('ending ZenPanda CDP session')
 
     instanceToKill.isProcessExit = options.isProcessExit
     instanceToKill.isOrphanedBrowserProcess = options.isOrphanedBrowserProcess
@@ -66,41 +63,8 @@ const kill = (options: KillOptions = {}) => {
   })
 }
 
-async function setFocus () {
-  const platform = os.platform()
-  const execAsync = util.promisify(exec)
-
-  try {
-    if (!instance) throw new Error('No instance in setFocus!')
-
-    switch (platform) {
-      case 'darwin':
-        await execAsync(`open -a "$(ps -p ${instance.pid} -o comm=)"`)
-
-        return
-      case 'win32': {
-        await execAsync(`(New-Object -ComObject WScript.Shell).AppActivate(((Get-WmiObject -Class win32_process -Filter "ParentProcessID = '${instance.pid}'") | Select -ExpandProperty ProcessId))`, { shell: 'powershell.exe' })
-
-        return
-      }
-      default:
-        debug(`Unexpected os platform ${platform}. Set focus is only functional on Windows and MacOS`)
-    }
-  } catch (error) {
-    debug(`Failure to set focus. ${error}`)
-  }
-}
-
-async function getBrowserLauncher (browser: Browser, browsers: FoundBrowser[]): Promise<BrowserLauncher> {
+function getBrowserLauncher (browser: Browser, browsers: FoundBrowser[]): BrowserLauncher {
   debug('getBrowserLauncher %o', { browser })
-
-  if (browser.name === 'electron') return require('./electron')
-
-  if (browser.family === 'chromium') return require('./chrome')
-
-  if (browser.family === 'firefox') return require('./firefox')
-
-  if (browser.family === 'webkit') return require('./webkit')
 
   if (browser.family === 'zenpanda') return require('./zenpanda')
 
@@ -122,20 +86,19 @@ const browsers = {
 
   formatBrowsersToOptions: utils.formatBrowsersToOptions,
 
-  setFocus,
+  // ZenPanda is headless-only; focus is a no-op
+  setFocus: () => Promise.resolve(),
 
   _setInstance (_instance: BrowserInstance) {
-    // for testing
     instance = _instance
   },
 
-  // note: does not guarantee that `browser` is still running
   getBrowserInstance () {
     return instance
   },
 
   async connectToExisting (browser: Browser, options: BrowserLaunchOpts, automation: Automation, cdpSocketServer?: CDPSocketServer): Promise<BrowserInstance | null> {
-    const browserLauncher = await getBrowserLauncher(browser, options.browsers)
+    const browserLauncher = getBrowserLauncher(browser, options.browsers)
 
     await browserLauncher.connectToExisting(browser, options, automation, cdpSocketServer)
 
@@ -143,31 +106,31 @@ const browsers = {
   },
 
   async connectProtocolToBrowser (options: { browser: Browser, foundBrowsers?: FoundBrowser[], protocolManager?: ProtocolManagerShape }) {
-    const browserLauncher = await getBrowserLauncher(options.browser, options.foundBrowsers || [])
+    const browserLauncher = getBrowserLauncher(options.browser, options.foundBrowsers || [])
 
     await browserLauncher.connectProtocolToBrowser(options)
   },
 
   async connectCyPromptToBrowser (options: { browser: Browser, foundBrowsers?: FoundBrowser[], cyPromptManager?: CyPromptManagerShape }) {
-    const browserLauncher = await getBrowserLauncher(options.browser, options.foundBrowsers || [])
+    const browserLauncher = getBrowserLauncher(options.browser, options.foundBrowsers || [])
 
     await browserLauncher.connectCyPromptToBrowser(options)
   },
 
   async connectStudioToBrowser (options: { browser: Browser, foundBrowsers?: FoundBrowser[], studioManager?: StudioManagerShape }) {
-    const browserLauncher = await getBrowserLauncher(options.browser, options.foundBrowsers || [])
+    const browserLauncher = getBrowserLauncher(options.browser, options.foundBrowsers || [])
 
     await browserLauncher.connectStudioToBrowser(options)
   },
 
   async closeProtocolConnection (options: { browser: Browser, foundBrowsers?: FoundBrowser[] }) {
-    const browserLauncher = await getBrowserLauncher(options.browser, options.foundBrowsers || [])
+    const browserLauncher = getBrowserLauncher(options.browser, options.foundBrowsers || [])
 
     await browserLauncher.closeProtocolConnection()
   },
 
   async connectToNewSpec (browser: Browser, options: BrowserNewTabOpts, automation: Automation, cdpSocketServer?: CDPSocketServer): Promise<BrowserInstance | null> {
-    const browserLauncher = await getBrowserLauncher(browser, options.browsers)
+    const browserLauncher = getBrowserLauncher(browser, options.browsers)
 
     await browserLauncher.connectToNewSpec(browser, options, automation, cdpSocketServer)
 
@@ -175,15 +138,9 @@ const browsers = {
   },
 
   async open (browser: Browser, options: BrowserLaunchOpts, automation: Automation, ctx: DataContext): Promise<BrowserInstance | null> {
-    // this global helps keep track of which launch attempt is the latest one
     launchAttempt++
-
-    // capture the launch attempt number for this attempt, so that if the global
-    // one changes in the course of launching, we know another attempt has been
-    // made that should supercede it. see the long comment below for more details
     const thisLaunchAttempt = launchAttempt
 
-    // kill any currently open browser instance before launching a new one
     await kill()
 
     _.defaults(options, {
@@ -193,42 +150,20 @@ const browsers = {
 
     ctx.actions.app.setBrowserStatus('opening')
 
-    const browserLauncher = await getBrowserLauncher(browser, options.browsers)
+    const browserLauncher = getBrowserLauncher(browser, options.browsers)
 
     if (!options.url) throw new Error('Missing url in browsers.open')
 
-    debug('opening browser %o', browser)
+    debug('opening ZenPanda session %o', browser)
 
     const _instance = await browserLauncher.open(browser, options.url, options, automation, ctx.coreData.servers.cdpSocketServer)
 
-    debug(`browser opened for launch ${thisLaunchAttempt}`)
+    debug(`ZenPanda session opened for launch ${thisLaunchAttempt}`)
 
-    // in most cases, we'll kill any running browser instance before launching
-    // a new one when we call `await kill()` early in this function.
-    // however, the code that calls this sets a timeout and, if that timeout
-    // hits, it catches the timeout error and retries launching the browser by
-    // calling this function again. that means any attempt to launch the browser
-    // isn't necessarily canceled; we just ignore its success. it's possible an
-    // original attempt to launch the browser eventually does succeed after
-    // we've already called this function again on retry. if the 1st
-    // (now timed-out) browser launch succeeds after this attempt to kill it,
-    // the 1st instance gets created but then orphaned when we override the
-    // `instance` singleton after the 2nd attempt succeeds. subsequent code
-    // expects only 1 browser to be connected at a time, so this causes wonky
-    // things to occur because we end up connected to and receiving messages
-    // from 2 browser instances.
-    //
-    // to counteract this potential race condition, we use the `launchAttempt`
-    // global to essentially track which browser launch attempt is the latest
-    // one. the latest one should always be the correct one we want to connect
-    // to, so if the `launchAttempt` global has changed in the course of launching
-    // this browser, it means it has been orphaned and should be terminated.
-    //
-    // https://github.com/cypress-io/cypress/issues/24377
     const isOrphanedBrowserProcess = thisLaunchAttempt !== launchAttempt
 
     if (isOrphanedBrowserProcess) {
-      debug(`killing process because launch attempt: ${thisLaunchAttempt} does not match current launch attempt: ${launchAttempt}`)
+      debug(`killing orphaned session ${thisLaunchAttempt}`)
       await kill({ instance: _instance, isOrphanedBrowserProcess, nullOut: false })
 
       return null
@@ -237,36 +172,20 @@ const browsers = {
     instance = _instance
     instance.browser = browser
 
-    // TODO: normalizing opening and closing / exiting
-    // so that there is a default for each browser but
-    // enable the browser to configure the interface
     instance.once('exit', async (code, signal) => {
-      // When the browser has unexpectedly exited, we need to send a signal to the attempt launcher to recreate the browser CRI clients.
-      // We do NOT want to attempt to use existing CRI clients as the previous instance of the browser was terminated.
-      // @see https://github.com/cypress-io/cypress/issues/27657
       ctx.coreData.didBrowserPreviouslyHaveUnexpectedExit = true
 
-      debug('browser instance exit event received %o', { code, signal })
+      debug('ZenPanda session exit %o', { code, signal })
 
       ctx.actions.app.setBrowserStatus('closed')
-      // TODO: make this a required property
-      if (!options.onBrowserClose) throw new Error('onBrowserClose did not exist in interactive mode')
-
-      const browserDisplayName = instance?.browser?.displayName || 'unknown'
+      if (!options.onBrowserClose) throw new Error('onBrowserClose did not exist')
 
       options.onBrowserClose()
       browserLauncher.clearInstanceState()
       instance = null
 
-      // We are being very narrow on when to restart the browser here. The only case we can reliably test the 'SIGTRAP' signal.
-      // We want to avoid adding signals in here that may intentionally be caused by a user.
-      // For example exiting firefox through either force quitting or quitting via cypress will fire a 'SIGTERM' event which
-      // would result in constantly relaunching the browser when the user actively wants to quit.
-      // On windows the crash produces 2147483651 as an exit code. We should add to the list of crashes we handle as we see them.
-      // In the future we may consider delegating to the browsers to determine if an exit is a crash since it might be different
-      // depending on what browser has crashed.
       if (code === null && ['SIGTRAP', 'SIGABRT'].includes(signal) || code === 2147483651 && signal === null) {
-        const err = errors.get('BROWSER_CRASHED', browserDisplayName, code, signal)
+        const err = errors.get('BROWSER_CRASHED', browser.displayName, code, signal)
 
         if (!options.onError) {
           errors.log(err)
@@ -277,25 +196,12 @@ const browsers = {
       }
     })
 
-    // TODO: instead of waiting an arbitrary
-    // amount of time here we could instead
-    // wait for the socket.io connect event
-    // which would mean that our browser is
-    // completely rendered and open. that would
-    // mean moving this code out of here and
-    // into the project itself
-    // (just like headless code)
-    // ----------------------------
-    // give a little padding around
-    // the browser opening
-    await Bluebird.delay(1000)
+    // ZenPanda is already running — no process startup delay needed
+    await Bluebird.delay(200)
 
-    if (instance === null) {
-      return null
-    }
+    if (instance === null) return null
 
-    // TODO: make this a required property
-    if (!options.onBrowserOpen) throw new Error('onBrowserOpen did not exist in interactive mode')
+    if (!options.onBrowserOpen) throw new Error('onBrowserOpen did not exist')
 
     options.onBrowserOpen()
     ctx.actions.app.setBrowserStatus('open')
@@ -303,13 +209,10 @@ const browsers = {
     return instance
   },
 
-  /**
-   * Closes extra targets that are not the Cypress tab
-   */
   async closeExtraTargets () {
     if (!instance?.browser) return
 
-    const browserLauncher = await getBrowserLauncher(instance.browser, [])
+    const browserLauncher = getBrowserLauncher(instance.browser, [])
 
     await browserLauncher.closeExtraTargets()
   },

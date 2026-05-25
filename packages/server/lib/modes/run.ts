@@ -12,14 +12,12 @@ import * as errors from '../errors'
 import Reporter from '../reporter'
 import browserUtils from '../browsers'
 import { openProject } from '../open_project'
-import * as videoCapture from '../video_capture'
 import { fs, getPath } from '../util/fs'
 import runEvents from '../plugins/run_events'
 import * as env from '../util/env'
 import trash from '../util/trash'
 import { id as randomId } from '../util/random'
 import * as system from '../util/system'
-import { run as runChromePolicyCheck } from '../util/chrome_policy_check'
 import type { SpecWithRelativeRoot, SpecFile, TestingType, OpenProjectLaunchOpts, FoundBrowser, BrowserVideoController, VideoRecording, ProcessOptions, ProtocolManagerShape, AutomationCommands } from '@packages/types'
 import type { Cfg, ProjectBase } from '../project-base'
 import type { Browser } from '../browsers/types'
@@ -283,37 +281,18 @@ async function startVideoRecording (options: { previous?: VideoRecording, projec
     return options.previous
   }
 
-  let ffmpegController: BrowserVideoController
-  let _ffmpegOpts: Pick<videoCapture.StartOptions, 'webmInput'>
-
+  // Video recording is not supported with ZenPanda — the browser has no
+  // screen-capture CDP domain. useFfmpegVideoController is a no-op.
   const videoRecording: VideoRecording = {
     api: {
       onError,
       videoName,
       compressedVideoName,
-      async useFfmpegVideoController (ffmpegOpts) {
-        _ffmpegOpts = ffmpegOpts || _ffmpegOpts
-        ffmpegController = await videoCapture.start({ ...videoRecording.api, ..._ffmpegOpts })
-
-        // This wrapper enables re-binding writeVideoFrame to a new video stream when running in single-tab mode.
-        const controllerWrap: BrowserVideoController = {
-          ...ffmpegController,
-          writeVideoFrame: function writeVideoFrameWrap (data) {
-            if (!ffmpegController) throw new Error('missing ffmpegController in writeVideoFrameWrap')
-
-            ffmpegController.writeVideoFrame(data)
-          },
-          async restart () {
-            await videoRecording.api.useFfmpegVideoController(_ffmpegOpts)
-          },
-        }
-
-        videoRecording.api.useVideoController(controllerWrap)
-
-        return controllerWrap
+      async useFfmpegVideoController (_ffmpegOpts) {
+        debug('video recording skipped (ZenPanda does not support screen capture)')
       },
       useVideoController (videoController) {
-        debug('setting videoController for videoRecording %o', videoRecording)
+        debug('setting videoController %o', videoRecording)
         videoRecording.controller = videoController
       },
       onProjectCaptureVideoFrames (fn) {
@@ -966,11 +945,6 @@ async function runSpec (config, spec: SpecWithRelativeRoot, options: { project: 
     browser: createPublicBrowser(browser),
   })
 
-  if (browser.family !== 'chromium' && !options.config.chromeWebSecurity) {
-    console.log('')
-    errors.warning('CHROME_WEB_SECURITY_NOT_SUPPORTED', browser.family)
-  }
-
   const screenshots = []
 
   async function getVideoRecording () {
@@ -1151,10 +1125,6 @@ async function ready (options: ReadyOptions) {
 
   if (browser.unsupportedVersion && browser.warning) {
     errors.throwErr('UNSUPPORTED_BROWSER_VERSION', browser.warning)
-  }
-
-  if (browser.family === 'chromium') {
-    runChromePolicyCheck(onWarning)
   }
 
   async function runAllSpecs ({ beforeSpecRun, afterSpecRun, runUrl, parallel }: { beforeSpecRun?: BeforeSpecRun, afterSpecRun?: AfterSpecRun, runUrl?: string, parallel?: boolean }) {

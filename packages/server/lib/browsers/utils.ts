@@ -21,7 +21,6 @@ const path = require('path')
 const debug = require('debug')('cypress:server:browsers:utils')
 const getPort = require('get-port')
 const { fs } = require('../util/fs')
-const extension = require('@packages/extension')
 const appData = require('../util/app_data')
 const { telemetry } = require('@packages/telemetry')
 
@@ -70,10 +69,6 @@ const getDefaultLaunchOptions = (options) => {
   return _.defaultsDeep(options, defaultLaunchOptions)
 }
 
-const copyExtension = (src, dest) => {
-  return fs.copyAsync(src, dest)
-}
-
 const getPartition = function (isTextTerminal) {
   if (isTextTerminal) {
     return `run-${process.pid}`
@@ -87,25 +82,6 @@ const getProfileDir = (browser, isTextTerminal) => {
     getBrowserPath(browser),
     getPartition(isTextTerminal),
   )
-}
-
-const getExtensionDir = (browser, isTextTerminal) => {
-  return path.join(
-    getProfileDir(browser, isTextTerminal),
-    'CypressExtension',
-  )
-}
-
-const ensureCleanCache = async function (browser, isTextTerminal) {
-  const p = path.join(
-    getProfileDir(browser, isTextTerminal),
-    'CypressCache',
-  )
-
-  await fs.removeAsync(p)
-  await fs.ensureDirAsync(p)
-
-  return p
 }
 
 // we now store profiles inside the Cypress binary folder
@@ -129,8 +105,6 @@ const removeOldProfiles = function (browser) {
     profileCleaner.removeInactiveByPid(pathToPartitions, 'run-'),
   ])
 }
-
-const pathToExtension = extension.getPathToExtension()
 
 async function executeBeforeBrowserLaunch (browser, launchOptions: typeof defaultLaunchOptions, options) {
   if (plugins.has('before:browser:launch')) {
@@ -208,88 +182,13 @@ function extendLaunchOptionsFromPlugins (launchOptions, pluginConfigResult, opti
   return launchOptions
 }
 
-const wkBrowserVersionRe = /BROWSER_VERSION\s*=\s*(['"])(?<version>[\d.]+)\1/gm
-
-const getWebKitBrowserVersion = async () => {
-  try {
-    // this seems to be the only way to accurately capture the WebKit version - it's not exported, and invoking the webkit binary with `--version` does not give the correct result
-    // after launching the browser, this is available at browser.version(), but we don't have a browser instance til later
-    const pwCorePath = path.dirname(require.resolve('playwright-core', { paths: [process.cwd()] }))
-    const wkBrowserPath = path.join(pwCorePath, 'lib', 'server', 'webkit', 'wkBrowser.js')
-    const wkBrowserContents = await fs.readFile(wkBrowserPath)
-    const result = wkBrowserVersionRe.exec(wkBrowserContents)
-
-    if (!result || !result.groups!.version) return '0'
-
-    return result.groups!.version
-  } catch (err) {
-    debug('Error detecting WebKit browser version %o', err)
-
-    return '0'
-  }
-}
-
-async function getWebKitBrowser () {
-  try {
-    const modulePath = require.resolve('playwright-webkit', { paths: [process.cwd()] })
-    const mod = await import(modulePath) as typeof import('playwright-webkit')
-    const version = await getWebKitBrowserVersion()
-
-    const browser: FoundBrowser = {
-      name: 'webkit',
-      channel: 'stable',
-      family: 'webkit',
-      displayName: 'WebKit',
-      version,
-      path: mod.webkit.executablePath(),
-      majorVersion: version.split('.')[0],
-      warning: 'WebKit support is currently experimental. Some functions may not work as expected.',
-    }
-
-    return browser
-  } catch (err) {
-    debug('WebKit is enabled, but there was an error constructing the WebKit browser: %o', { err })
-
-    return
-  }
-}
-
+/** Returns detected browsers. ZenPanda is the only supported browser. */
 const getBrowsers = async () => {
   debug('getBrowsers')
 
-  const [browsers, wkBrowser] = await Promise.all([
-    launcher.detect(),
-    getWebKitBrowser(),
-  ])
-
-  if (wkBrowser) browsers.push(wkBrowser)
+  const browsers = await launcher.detect()
 
   debug('found browsers %o', { browsers })
-
-  if (!process.versions.electron) {
-    debug('not in electron, skipping adding electron browser')
-
-    return browsers
-  }
-
-  const version = process.versions.chrome || ''
-  let majorVersion
-
-  if (version) {
-    majorVersion = getMajorVersion(version)
-  }
-
-  const electronBrowser: FoundBrowser = {
-    name: 'electron',
-    channel: 'stable',
-    family: 'chromium',
-    displayName: 'Electron',
-    version,
-    path: '',
-    majorVersion,
-  }
-
-  browsers.push(electronBrowser)
 
   return browsers
 }
@@ -493,17 +392,11 @@ const browserUtils = {
 
   getPort,
 
-  copyExtension,
-
   getBrowserPath,
 
   getMajorVersion,
 
   getProfileDir,
-
-  getExtensionDir,
-
-  ensureCleanCache,
 
   removeOldProfiles,
 
@@ -518,32 +411,6 @@ const browserUtils = {
   initializeCDP,
 
   listenForDownload,
-
-  writeExtension (browser, isTextTerminal, proxyUrl, socketIoRoute) {
-    debug('writing extension')
-
-    // debug('writing extension to chrome browser')
-    // get the string bytes for the final extension file
-    return extension.setHostAndPath(proxyUrl, socketIoRoute)
-    .then((str) => {
-      const extensionDest = getExtensionDir(browser, isTextTerminal)
-      const extensionBg = path.join(extensionDest, 'background.js')
-
-      // copy the extension src to the extension dist
-      return copyExtension(pathToExtension, extensionDest)
-      .then(() => {
-        debug('copied extension')
-
-        // ensure write access before overwriting
-        return fs.chmod(extensionBg, 0o0644)
-      })
-      .then(() => {
-        // and overwrite background.js with the final string bytes
-        return fs.writeFileAsync(extensionBg, str)
-      })
-      .then(() => extensionDest)
-    })
-  },
 }
 
 export default browserUtils

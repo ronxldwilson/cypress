@@ -543,24 +543,8 @@ export class ProjectConfigManager {
         fullConfig.resolved.browsers = { 'value': fullConfig.browsers, 'from': 'runtime' }
       }
 
-      fullConfig.browsers = fullConfig.browsers?.map((browser) => {
-        if (browser.family === 'webkit' && !fullConfig.experimentalWebKitSupport) {
-          return {
-            ...browser,
-            disabled: true,
-            warning: '`playwright-webkit` is installed and WebKit is detected, but `experimentalWebKitSupport` is not enabled in your Cypress config. Set it to `true` to use WebKit.',
-          }
-        }
-
-        if (browser.family !== 'chromium' && !fullConfig.chromeWebSecurity) {
-          return {
-            ...browser,
-            warning: browser.warning || getError('CHROME_WEB_SECURITY_NOT_SUPPORTED', browser.name).message,
-          }
-        }
-
-        return browser
-      })
+      // No browser-family-specific overrides needed for ZenPanda
+      fullConfig.browsers = fullConfig.browsers || []
 
       // If we have withBrowsers set to false, it means we're coming from the legacy config.get API
       // in tests, which shouldn't be validating the config
