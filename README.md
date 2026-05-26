@@ -1,13 +1,13 @@
-# Cypress × ZenPanda
+# Zenpresso
 
-A stripped-down fork of [Cypress](https://www.cypress.io) that targets [ZenPanda](https://github.com/ronxldwilson/zenpanda) as the sole browser backend.
+Zenpresso — a stripped-down Cypress fork built for ZenPanda.
 
-ZenPanda is a multi-tenant headless browser (Zig + V8) that speaks the Chrome DevTools Protocol (CDP). It runs as a persistent server — Cypress connects to it over a WebSocket instead of launching a new browser process per run.
+[ZenPanda](https://github.com/ronxldwilson/zenpanda) is a multi-tenant headless browser (Zig + V8) that speaks the Chrome DevTools Protocol (CDP). It runs as a persistent server — Zenpresso connects to it over a WebSocket instead of launching a new browser process per run.
 
 ## Why
 
 - **Speed** — no per-run browser spawn; ZenPanda is already running
-- **Scale** — multi-tenant; many Cypress workers can share one ZenPanda instance
+- **Scale** — multi-tenant; many Zenpresso workers can share one ZenPanda instance
 - **Lean** — removed Chrome, Firefox, WebKit, Electron browser launchers; removed ffmpeg, geckodriver, playwright-webkit, and all framework-specific component-testing adapters
 
 ## Prerequisites
@@ -39,7 +39,7 @@ bun packages/launcher/test-zenpanda-detect.js
 # Run the CDP smoke test (requires ZenPanda running)
 bun packages/server/test-zenpanda-cdp.js
 
-# Open Cypress (dev mode)
+# Open Zenpresso (dev mode)
 bun dev
 ```
 

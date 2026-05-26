@@ -386,7 +386,12 @@ export async function open (
   ])
 
   // Cache runner host for subsequent spec navigations (connectToNewSpec)
+  // Also propagate to env so socket_allowed can permit Docker bridge connections
   _cachedRunnerHost = _detectRunnerHost(host, port)
+
+  if (_cachedRunnerHost && !process.env.ZENPANDA_RUNNER_HOST) {
+    process.env.ZENPANDA_RUNNER_HOST = _cachedRunnerHost
+  }
 
   // ZenPanda is not launched with --proxy-server so it cannot route through
   // Cypress's HTTP proxy automatically. Instead we navigate it directly to

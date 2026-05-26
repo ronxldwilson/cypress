@@ -16,7 +16,7 @@ export function relativeToRepoRoot (targetPath: string): string | undefined {
         const pkg = JSON.parse(readFileSync(rootPackageJson, 'utf8'))
         const targetPathExists = existsSync(resolvedTargetPath)
 
-        if (targetPathExists && pkg.name === 'cypress') {
+        if (targetPathExists && (pkg.name === 'cypress' || pkg.name === 'zenpresso')) {
           return path.resolve(currentDir, targetPath)
         }
       } catch {

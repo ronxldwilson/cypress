@@ -1,7 +1,7 @@
 {
-  "name": "cypress",
+  "name": "zenpresso",
   "version": "0.0.0-development",
-  "description": "Cypress is a next generation front end testing tool built for the modern web",
+  "description": "Zenpresso — a stripped-down Cypress fork built for ZenPanda",
   "private": true,
   "scripts": {
     "binary-build": "cross-env NODE_OPTIONS=--max_old_space_size=8192 node ./scripts/binary.js build",
