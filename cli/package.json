@@ -10,7 +10,7 @@
     "dtslint": "dtslint types",
     "lint": "eslint",
     "prebuild": "yarn clean-cli-build && tsx ./scripts/prep-build-dir.ts",
-    "postbuild": "yarn make-bin-executable && yarn sync-build-dist && yarn prepare-package-json && yarn bundle-ct-frameworks",
+    "postbuild": "bun run make-bin-executable && bun run sync-build-dist && bun run prepare-package-json && bun run bundle-ct-frameworks",
     "size": "t=\"cypress-v0.0.0.tgz\"; yarn pack --filename \"${t}\"; wc -c \"${t}\"; tar tvf \"${t}\"; rm \"${t}\";",
     "test": "yarn test-unit",
     "test-debug": "npx vitest --inspect-brk --no-file-parallelism --test-timeout=0",
