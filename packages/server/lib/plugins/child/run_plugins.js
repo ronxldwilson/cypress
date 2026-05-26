@@ -251,16 +251,26 @@ class RunPlugins {
   }
 
   _getDefaultPreprocessor (config) {
-    const tsPath = resolve.typescript(config.projectRoot)
-    const options = {
-      ...tsPath && { typescript: tsPath },
+    debug('creating esbuild preprocessor (ZenPanda fork)')
+    const esbuild = require('/Users/ron/Desktop/tipstat/sourcer/cypress/node_modules/.bun/node_modules/esbuild')
+    const path = require('path')
+    const fs = require('fs')
+
+    return function preprocessFile (file) {
+      const filePath = file.filePath
+      const outputPath = file.outputPath
+
+      return esbuild.build({
+        entryPoints: [filePath],
+        bundle: true,
+        outfile: outputPath,
+        platform: 'browser',
+        format: 'iife',
+        globalName: '__cypressBundle',
+        sourcemap: 'inline',
+        loader: { '.ts': 'ts', '.tsx': 'tsx', '.js': 'js', '.jsx': 'jsx' },
+      }).then(() => outputPath)
     }
-
-    debug('creating webpack batteries included preprocessor with options %o', options)
-
-    const webpackPreprocessor = require('@cypress/webpack-batteries-included-preprocessor')
-
-    return webpackPreprocessor(options)
   }
 }
 

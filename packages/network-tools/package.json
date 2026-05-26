@@ -2,7 +2,7 @@
   "name": "@packages/network-tools",
   "version": "0.0.0-development",
   "private": true,
-  "main": "cjs/index.js",
+  "main": "lib/index.ts",
   "scripts": {
     "build": "yarn build:esm && yarn build:cjs",
     "build-prod": "yarn build",

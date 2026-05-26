@@ -43,8 +43,8 @@ const setRemoteDebuggingPort = async () => {
 }
 
 const isRunning = () => {
-  // are we in the electron or the node process?
-  return Boolean(process.env.ELECTRON_RUN_AS_NODE || process.versions && process.versions.electron)
+  // ZenPanda fork: never running in Electron
+  return false
 }
 
 const isRunningAsElectronProcess = ({ debug } = {}) => {

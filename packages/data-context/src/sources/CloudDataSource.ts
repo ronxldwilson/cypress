@@ -25,7 +25,7 @@ import { delegateToSchema } from '@graphql-tools/delegate'
 import { urqlCacheKeys } from '../util/urqlCacheKeys'
 import { CLOUD_URLS } from '../util/cloudUrls'
 import type { CloudEnv } from '../util/cloudUrls'
-import { urqlSchema } from '../gen/urql-introspection.gen'
+const urqlSchema = {} // Cypress Cloud schema not needed in ZenPanda fork
 import type { AuthenticatedUserShape } from '../data'
 import { pathToArray } from 'graphql/jsutils/Path'
 
@@ -123,7 +123,7 @@ export class CloudDataSource {
         dedupExchange,
         cacheExchange({
           // @ts-ignore
-          schema: urqlSchema,
+          ...(urqlSchema && Object.keys(urqlSchema).length ? { schema: urqlSchema } : {}),
           ...urqlCacheKeys,
           updates: {
             Mutation: {

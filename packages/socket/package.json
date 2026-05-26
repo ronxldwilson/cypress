@@ -2,7 +2,7 @@
   "name": "@packages/socket",
   "version": "0.0.0-development",
   "private": true,
-  "main": "cjs/node/index.js",
+  "main": "lib/node/index.ts",
   "browser": "browser/client/index.js",
   "scripts": {
     "build": "yarn build:browser && yarn build:node && yarn build:node:esm",

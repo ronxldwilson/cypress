@@ -1,6 +1,15 @@
 import { DataContext, getCtx, clearCtx, setCtx } from '@packages/data-context'
-// tslint:disable-next-line no-implicit-dependencies - electron dep needs to be defined
-import electron, { OpenDialogOptions, SaveDialogOptions, BrowserWindow } from 'electron'
+// ZenPanda fork: Electron APIs stubbed — no GUI
+import type { OpenDialogOptions, SaveDialogOptions, BrowserWindow } from 'electron'
+const electron = {
+  shell: { showItemInFolder: (_: string) => {} },
+  dialog: {
+    showOpenDialog: (_: OpenDialogOptions) => Promise.resolve({ canceled: true, filePaths: [] }),
+    showSaveDialog: (_1: BrowserWindow, _2: SaveDialogOptions) => Promise.resolve({ canceled: true }),
+  },
+  clipboard: { writeText: (_: string) => {} },
+  Notification: class { constructor (_: any) {} show () {} },
+}
 
 import { isListening } from './util/ensure-url'
 const isMainWindowFocused = () => false

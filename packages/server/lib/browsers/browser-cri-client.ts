@@ -168,6 +168,11 @@ interface ExtraTarget {
 }
 
 export class BrowserCriClient {
+  // exposed for ZenPanda session-based attachment
+  get rawBrowserClient () {
+    return this.browserClient
+  }
+
   private browserClient: CriClient
   private versionInfo: CRI.VersionResult
   private host: string
@@ -525,6 +530,34 @@ export class BrowserCriClient {
     return retryWithIncreasingDelay(async () => {
       debug('Attaching to target url %s', url)
       const { targetInfos: targets } = await this.browserClient.send('Target.getTargets')
+
+      // ZenPanda starts with no targets — create one if list is empty
+      if (targets.length === 0) {
+        debug('No targets found, creating new target for ZenPanda')
+        await this.browserClient.send('Target.createTarget', { url: 'about:blank' })
+        const { targetInfos: newTargets } = await this.browserClient.send('Target.getTargets')
+
+        if (newTargets.length === 0) {
+          throw new Error(`Could not find url target in browser ${url}. Targets were []`)
+        }
+
+        const newTarget = newTargets[0]
+
+        this.currentlyAttachedTarget = await CriClient.create({
+          target: newTarget.targetId,
+          onAsynchronousError: this.onAsynchronousError,
+          host: this.host,
+          port: this.port,
+          protocolManager: this.protocolManager,
+          fullyManageTabs: this.fullyManageTabs,
+          browserClient: this.browserClient,
+        })
+
+        this.currentlyAttachedProtocolTarget = await this.currentlyAttachedTarget.clone()
+        await this.protocolManager?.connectToBrowser(this.currentlyAttachedProtocolTarget)
+
+        return this.currentlyAttachedTarget
+      }
 
       const target = targets.find((target) => target.url === url)
 

@@ -109,30 +109,10 @@ export = {
         return require('./modes')(mode, options)
       }
 
-      return new Promise(async (resolve) => {
-        debug('starting Electron')
-        const cypressElectron = require('@packages/electron')
+      // ZenPanda fork: no Electron — run modes directly in this process
+      debug('ZenPanda mode: running %s directly without Electron', mode)
 
-        const args = require('./util/args').toArray(options)
-
-        debug('electron open arguments %o', args)
-
-        // const mainEntryFile = require.main.filename
-        const serverMain = getCwd()
-
-        const child: ChildProcess = await cypressElectron.open(serverMain, args)
-
-        child.on('close', (exitCode, signal) => {
-          debug('electron closed with', { code: exitCode, signal })
-          const code = signal ? 1 : (exitCode ?? 0)
-
-          if (mode === 'smokeTest') {
-            resolve(code)
-          } else {
-            resolve({ totalFailed: code })
-          }
-        })
-      })
+      return require('./modes')(mode, options)
     })
   },
 

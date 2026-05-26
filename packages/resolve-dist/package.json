@@ -2,7 +2,7 @@
   "name": "@packages/resolve-dist",
   "version": "0.0.0-development",
   "private": true,
-  "main": "cjs/index.js",
+  "main": "lib/index.ts",
   "scripts": {
     "build": "yarn build:cjs && yarn build:esm",
     "build-prod": "yarn build",

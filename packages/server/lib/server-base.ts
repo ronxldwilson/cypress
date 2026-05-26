@@ -552,7 +552,8 @@ export class ServerBase<TSocket extends SocketE2E | SocketCt> {
         resolve(address.port)
       }
 
-      this.server.listen(port || 0, '127.0.0.1', listener)
+      // ZenPanda fork: listen on all interfaces so Docker-based ZenPanda can reach the runner
+      this.server.listen(port || 0, '0.0.0.0', listener)
     })
   }
 

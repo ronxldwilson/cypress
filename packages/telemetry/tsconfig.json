@@ -7,9 +7,7 @@
     "allowJs": false,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
-    "types": [
-      "cypress"
-    ],
+    "types": [],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

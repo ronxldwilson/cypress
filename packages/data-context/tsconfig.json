@@ -1,6 +1,6 @@
 {
   "extends": "../ts/tsconfig.json",
-  "include": ["src", "graphql"],
+  "include": ["src", "graphql", "gen"],
   "exclude": [
     "script"
   ],
