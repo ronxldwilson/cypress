@@ -17,6 +17,7 @@ import { BrowserCriClient } from './browser-cri-client'
 import { CdpAutomation } from './cdp_automation'
 import { _connectAsync, _getDelayMsForRetry } from './protocol'
 import utils from './utils'
+import { ensureZenPandaRunning } from './zenpanda-lifecycle'
 import type { Browser, BrowserInstance } from './types'
 import type { Automation } from '../automation'
 import type { BrowserLaunchOpts, BrowserNewTabOpts, ProtocolManagerShape, CyPromptManagerShape, StudioManagerShape } from '@packages/types'
@@ -29,6 +30,7 @@ const ZENPANDA_DEFAULT_HOST = '127.0.0.1'
 const ZENPANDA_DEFAULT_PORT = 9222
 
 let browserCriClient: BrowserCriClient | undefined
+let lifecycleCleanup: (() => Promise<void>) | undefined
 
 function getZenPandaEndpoint (browser: Browser): { host: string, port: number } {
   // browser.path is set to http://<host>:<port> during detection (see launcher/detect.ts)
@@ -81,6 +83,8 @@ export function clearInstanceState () {
   debug('clearing ZenPanda instance state')
   browserCriClient?.close().catch(() => {})
   browserCriClient = undefined
+  lifecycleCleanup?.().catch(() => {})
+  lifecycleCleanup = undefined
 }
 
 export async function connectToExisting (
@@ -209,6 +213,11 @@ export async function open (
   debug('connecting to ZenPanda at %s:%d for url %s', host, port, url)
 
   if (!options.onError) throw new Error('Missing onError in zenpanda#open')
+
+  // Auto-start ZenPanda via Docker/native/WSL if not already running
+  const zenConfig = (options as any).zenpanda || {}
+
+  lifecycleCleanup = await ensureZenPandaRunning({ host, port, ...zenConfig })
 
   // Verify ZenPanda is reachable before attempting CDP connection
   await _connectAsync({ host, port, getDelayMsForRetry: (i) => _getDelayMsForRetry(i, browser.displayName) }).catch((err) => {
